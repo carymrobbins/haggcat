@@ -11,6 +11,7 @@ import Network.HTTP.Conduit
 import Network.TLS.Extra
 import System.IO
 
+import Aggcat.Types
 import Aggcat.Saml
 
 intuit = do
@@ -50,14 +51,14 @@ readKey :: String -> IO String
 readKey = liftM strip . readFile . (keyDirectory ++)
 
 --getCertificate :: IO PrivateKey
-getCertificate = fileReadPrivateKey $ keyDirectory ++ "certificate.key"
+getCertificate = fileReadPrivateKey $ "test-files/certificate.key"
 
-getConsumerKey :: IO String
+getConsumerKey :: IO ConsumerKey
 getConsumerKey = readKey "consumer_key"
 
-getConsumerSecret :: IO String
+getConsumerSecret :: IO ConsumerSecret
 getConsumerSecret = readKey "consumer_secret"
 
-getIssuerId :: IO String
+getIssuerId :: IO IssuerId
 getIssuerId = readKey "issuer_id"
 

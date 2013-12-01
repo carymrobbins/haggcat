@@ -22,5 +22,6 @@ library
                     uuid
   exposed-modules:  Aggcat,
                     Aggcat.Saml
+  extensions:       OverloadedStrings
   ghc-options:      -Wall
 

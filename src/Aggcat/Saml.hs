@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Aggcat.Saml where
 
 import qualified Codec.Crypto.RSA as RSA
@@ -17,83 +18,102 @@ import Numeric
 import System.Locale (defaultTimeLocale)
 import Text.Regex
 
+import Aggcat.Types
+
+type SamlAssertionId = String
+type SamlIssueInstant = UTCTime
+type SamlNotBefore = UTCTime
+type SamlNotOnOrAfter = UTCTime
+type SamlSignature = String
+
+data Saml = Saml
+    { samlAssertionId :: SamlAssertionId
+    , samlIssueInstant :: SamlIssueInstant
+    , samlNotBefore :: SamlNotBefore
+    , samlNotOnOrAfter :: SamlNotOnOrAfter
+    , samlSignature :: SamlSignature
+    , samlIssuerId :: IssuerId
+    , samlCustomerId :: CustomerId
+    } deriving (Show)
+
 isoFormatTime :: UTCTime -> String
 isoFormatTime = formatTime defaultTimeLocale "%FT%T%QZ"
 
 uuidToHex :: U.UUID -> String
-uuidToHex uuid = concat . map ((flip showHex) "") $ [a,b,c,d]
+uuidToHex uuid = concatMap (`showHex` "") [a,b,c,d]
   where
     (a,b,c,d) = U.toWords uuid
 
-newHexUUID :: IO String
-newHexUUID = liftM uuidToHex nextRandom
+newAssertionId :: IO SamlAssertionId
+newAssertionId = liftM uuidToHex nextRandom
 
 cleanSaml :: String -> String
-cleanSaml = strip . (flip (subRegex (mkRegex ">\\s*<"))) "><"
+cleanSaml = strip . flip (subRegex (mkRegex ">\\s*<")) "><"
 
-data Saml = Saml
-    { assertionId :: String
-    , issueInstant :: UTCTime
-    , notBefore :: UTCTime
-    , notOnOrAfter :: UTCTime
-    , consumerKey :: String
-    , customerId :: String
-    , signature :: String
-    } deriving (Show)
-
-newSaml :: String -> String -> IO Saml
-newSaml consumerKey customerId = do
-    uuid <- newHexUUID
+newSaml :: IssuerId -> CustomerId -> IO Saml
+newSaml issuerId customerId = do
+    uuid <- newAssertionId
     now <- getCurrentTime
-    return $ Saml
-        { assertionId=uuid
-        , consumerKey=consumerKey
-        , issueInstant=now
-        , notBefore=addUTCTime (-5 * 60) now
-        , notOnOrAfter=addUTCTime (10 * 60) now
-        , customerId=customerId
-        , signature=""
+    return Saml
+        { samlAssertionId=uuid
+        , samlIssuerId=issuerId
+        , samlIssueInstant=now
+        , samlNotBefore=addUTCTime (-5 * 60) now
+        , samlNotOnOrAfter=addUTCTime (10 * 60) now
+        , samlCustomerId=customerId
+        , samlSignature=""
         }
 
-signedSignatureValue :: Saml -> RSA.PrivateKey -> LBS.ByteString
-signedSignatureValue saml privateKey =
-    Base64.encode . RSA.sign privateKey . strictToLazyBS . SHA1.hash . C.pack $ samlSignedInfo
-        (assertionId saml)
-        (LC.unpack . signedDigestValue $ saml)
+newSignedSignatureValue :: Saml -> RSA.PrivateKey -> LBS.ByteString
+newSignedSignatureValue saml privateKey =
+    Base64.encode . RSA.sign privateKey . strictToLazyBS . SHA1.hash . C.pack $ newSamlSignedInfo
+        (samlAssertionId saml)
+        (LC.unpack . newSignedDigestValue $ saml)
 
 strictToLazyBS :: BS.ByteString -> LBS.ByteString
 strictToLazyBS = LBS.fromChunks . pure
 
-signedDigestValue :: Saml -> LBS.ByteString
-signedDigestValue saml =
+lazyToStrictBS :: LBS.ByteString -> BS.ByteString
+lazyToStrictBS = BS.concat . LBS.toChunks
+
+newSignedDigestValue :: Saml -> LBS.ByteString
+newSignedDigestValue saml =
     Base64.encode . strictToLazyBS . SHA1.hash . C.pack $ assertion
   where
-    assertion = samlAssertion
-        (assertionId saml)
-        (isoFormatTime . issueInstant $ saml)
-        (isoFormatTime . notBefore $ saml)
-        (isoFormatTime . notOnOrAfter $ saml)
-        (consumerKey saml)
-        (signature saml)
-        (customerId saml)
+    assertion = newSamlAssertion
+        (samlAssertionId saml)
+        (isoFormatTime . samlIssueInstant $ saml)
+        (isoFormatTime . samlNotBefore $ saml)
+        (isoFormatTime . samlNotOnOrAfter $ saml)
+        (samlIssuerId saml)
+        (samlSignature saml)
+        (samlCustomerId saml)
 
-samlAssertion :: String -> String -> String -> String -> String -> String -> String -> String 
-samlAssertion
+newSamlAssertion
+  :: String
+     -> String
+     -> String
+     -> String
+     -> String
+     -> String
+     -> String
+     -> String
+newSamlAssertion
     assertionId
     isoNow
     isoNotBefore
     isoNotAfter
-    samlIdentityProviderId
+    issuerId
     signature
     customerId = cleanSaml "\
 \<saml2:Assertion xmlns:saml2=\"urn:oasis:names:tc:SAML:2.0:assertion\" ID=\"_%" ++ assertionId ++ "\" IssueInstant=\"" ++ isoNow ++ "\" Version=\"2.0\">\
-  \<saml2:Issuer>" ++ samlIdentityProviderId ++ "</saml2:Issuer>" ++ signature ++ "<saml2:Subject>\
+  \<saml2:Issuer>" ++ issuerId ++ "</saml2:Issuer>" ++ signature ++ "<saml2:Subject>\
     \<saml2:NameID Format=\"urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified\">" ++ customerId ++ "</saml2:NameID>\
     \<saml2:SubjectConfirmation Method=\"urn:oasis:names:tc:SAML:2.0:cm:bearer\"></saml2:SubjectConfirmation>\
   \</saml2:Subject>\
   \<saml2:Conditions NotBefore=\"" ++ isoNotBefore ++ "\" NotOnOrAfter=\"" ++ isoNotAfter ++ "\">\
     \<saml2:AudienceRestriction>\
-      \<saml2:Audience>" ++ samlIdentityProviderId ++ "</saml2:Audience>\
+      \<saml2:Audience>" ++ issuerId ++ "</saml2:Audience>\
     \</saml2:AudienceRestriction>\
   \</saml2:Conditions>\
   \<saml2:AuthnStatement AuthnInstant=\"" ++ isoNow ++ "\" SessionIndex=\"_" ++ assertionId ++ "\">\
@@ -103,8 +123,8 @@ samlAssertion
   \</saml2:AuthnStatement>\
 \</saml2:Assertion>"
 
-samlSignedInfo :: String -> String -> String
-samlSignedInfo
+newSamlSignedInfo :: String -> String -> String
+newSamlSignedInfo
     assertionId
     signedDigestValue = cleanSaml "\
 \<ds:SignedInfo xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\">\
@@ -120,8 +140,8 @@ samlSignedInfo
     \</ds:Reference>\
 \</ds:SignedInfo>"
 
-samlSignature :: String -> String -> String -> String
-samlSignature
+newSamlSignature :: String -> String -> String -> String
+newSamlSignature
     assertionId
     signedDigestValue
     signedSignatureValue = cleanSaml "\
