@@ -1,6 +1,7 @@
 module Aggcat.Saml where
 
 import qualified Codec.Crypto.RSA as RSA
+import Control.Applicative
 import Control.Monad
 import qualified Crypto.Hash.SHA1 as SHA1
 import qualified Data.ByteString.Base64.Lazy as Base64
@@ -16,14 +17,8 @@ import Numeric
 import System.Locale (defaultTimeLocale)
 import Text.Regex
 
-foo :: String -> LBS.ByteString
-foo = LC.pack
-
 isoFormatTime :: UTCTime -> String
 isoFormatTime = formatTime defaultTimeLocale "%FT%T%QZ"
-
-newIsoTime :: IO String
-newIsoTime = liftM isoFormatTime getCurrentTime
 
 uuidToHex :: U.UUID -> String
 uuidToHex uuid = concat . map ((flip showHex) "") $ [a,b,c,d]
@@ -48,10 +43,10 @@ data Saml = Saml
 
 newSaml :: String -> String -> IO Saml
 newSaml consumerKey customerId = do
-    assertionId <- newHexUUID
+    uuid <- newHexUUID
     now <- getCurrentTime
     return $ Saml
-        { assertionId=assertionId
+        { assertionId=uuid
         , consumerKey=consumerKey
         , issueInstant=now
         , notBefore=addUTCTime (-5 * 60) now
@@ -60,15 +55,18 @@ newSaml consumerKey customerId = do
         , signature=""
         }
 
---signedSignatureValue :: Saml -> RSA.PrivateKey -> LBS.ByteString
+signedSignatureValue :: Saml -> RSA.PrivateKey -> LBS.ByteString
 signedSignatureValue saml privateKey =
-    Base64.encode . RSA.sign privateKey . SHA1.hashlazy . LC.pack $ samlSignedInfo
+    Base64.encode . RSA.sign privateKey . strictToLazyBS . SHA1.hash . C.pack $ samlSignedInfo
         (assertionId saml)
-        (C.unpack . signedDigestValue $ saml)
+        (LC.unpack . signedDigestValue $ saml)
 
---signedDigestValue :: Saml -> LBS.ByteString
+strictToLazyBS :: BS.ByteString -> LBS.ByteString
+strictToLazyBS = LBS.fromChunks . pure
+
+signedDigestValue :: Saml -> LBS.ByteString
 signedDigestValue saml =
-    Base64.encode . SHA1.hashlazy . LC.pack $ assertion
+    Base64.encode . strictToLazyBS . SHA1.hash . C.pack $ assertion
   where
     assertion = samlAssertion
         (assertionId saml)
@@ -88,20 +86,21 @@ samlAssertion
     samlIdentityProviderId
     signature
     customerId = cleanSaml "\
-\  <saml2:Issuer>" ++ samlIdentityProviderId ++ "</saml2:Issuer>" ++ signature ++ "<saml2:Subject>\
-\    <saml2:NameID Format=\"urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified\">" ++ customerId ++ "</saml2:NameID>\
-\    <saml2:SubjectConfirmation Method=\"urn:oasis:names:tc:SAML:2.0:cm:bearer\"></saml2:SubjectConfirmation>\
-\  </saml2:Subject>\
-\  <saml2:Conditions NotBefore=\"" ++ isoNotBefore ++ "\" NotOnOrAfter=\"" ++ isoNotAfter ++ "\">\
-\    <saml2:AudienceRestriction>\
-\      <saml2:Audience>" ++ samlIdentityProviderId ++ "</saml2:Audience>\
-\    </saml2:AudienceRestriction>\
-\  </saml2:Conditions>\
-\  <saml2:AuthnStatement AuthnInstant=\"" ++ isoNow ++ "\" SessionIndex=\"_" ++ assertionId ++ "\">\
-\    <saml2:AuthnContext>\
-\      <saml2:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified</saml2:AuthnContextClassRef>\
-\    </saml2:AuthnContext>\
-\  </saml2:AuthnStatement>\
+\<saml2:Assertion xmlns:saml2=\"urn:oasis:names:tc:SAML:2.0:assertion\" ID=\"_%" ++ assertionId ++ "\" IssueInstant=\"" ++ isoNow ++ "\" Version=\"2.0\">\
+  \<saml2:Issuer>" ++ samlIdentityProviderId ++ "</saml2:Issuer>" ++ signature ++ "<saml2:Subject>\
+    \<saml2:NameID Format=\"urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified\">" ++ customerId ++ "</saml2:NameID>\
+    \<saml2:SubjectConfirmation Method=\"urn:oasis:names:tc:SAML:2.0:cm:bearer\"></saml2:SubjectConfirmation>\
+  \</saml2:Subject>\
+  \<saml2:Conditions NotBefore=\"" ++ isoNotBefore ++ "\" NotOnOrAfter=\"" ++ isoNotAfter ++ "\">\
+    \<saml2:AudienceRestriction>\
+      \<saml2:Audience>" ++ samlIdentityProviderId ++ "</saml2:Audience>\
+    \</saml2:AudienceRestriction>\
+  \</saml2:Conditions>\
+  \<saml2:AuthnStatement AuthnInstant=\"" ++ isoNow ++ "\" SessionIndex=\"_" ++ assertionId ++ "\">\
+    \<saml2:AuthnContext>\
+      \<saml2:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified</saml2:AuthnContextClassRef>\
+    \</saml2:AuthnContext>\
+  \</saml2:AuthnStatement>\
 \</saml2:Assertion>"
 
 samlSignedInfo :: String -> String -> String
