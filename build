@@ -1,0 +1,5 @@
+#/bin/bash
+set -e
+cabal-dev install-deps
+cabal-dev configure
+cabal-dev build
