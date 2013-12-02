@@ -12,13 +12,13 @@ library
                     bytestring,
                     conduit,
                     cryptohash,
+                    crypto-pubkey-openssh,
                     http-conduit,
                     MissingH,
                     old-locale,
                     regex-compat,
                     RSA,
                     time,
-                    tls-extra,
                     uuid
   exposed-modules:  Aggcat,
                     Aggcat.Saml
