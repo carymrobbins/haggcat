@@ -26,6 +26,9 @@ type SamlNotBefore = UTCTime
 type SamlNotOnOrAfter = UTCTime
 type SamlSignature = String
 
+samlUrl :: String
+samlUrl = "https://oauth.intuit.com/oauth/v1/get_access_token_by_saml"
+
 data Saml = Saml
     { samlAssertionId :: SamlAssertionId
     , samlIssueInstant :: SamlIssueInstant
@@ -64,11 +67,30 @@ newSaml issuerId customerId = do
         , samlSignature=""
         }
 
-newSignedSignatureValue :: Saml -> RSA.PrivateKey -> LBS.ByteString
-newSignedSignatureValue saml privateKey =
+newAssertion :: Saml -> RSA.PrivateKey -> LBS.ByteString
+newAssertion saml privateKey =
+    Base64.encode . LC.pack $ assertion
+  where
+    signedDigestValue = newSignedDigestValue saml
+    signedSignatureValue = newSignedSignatureValue saml privateKey signedDigestValue
+    signature = newSamlSignature
+        (samlAssertionId saml)
+        (LC.unpack signedDigestValue)
+        (LC.unpack signedSignatureValue)
+    assertion = newSamlAssertion
+        (samlAssertionId saml)
+        (isoFormatTime . samlIssueInstant $ saml)
+        (isoFormatTime . samlNotBefore $ saml)
+        (isoFormatTime . samlNotOnOrAfter $ saml)
+        (samlIssuerId saml)
+        signature
+        (samlCustomerId saml)
+
+newSignedSignatureValue :: Saml -> RSA.PrivateKey -> LBS.ByteString -> LBS.ByteString
+newSignedSignatureValue saml privateKey signedDigestValue =
     Base64.encode . RSA.sign privateKey . strictToLazyBS . SHA1.hash . C.pack $ newSamlSignedInfo
         (samlAssertionId saml)
-        (LC.unpack . newSignedDigestValue $ saml)
+        (LC.unpack signedDigestValue)
 
 strictToLazyBS :: BS.ByteString -> LBS.ByteString
 strictToLazyBS = LBS.fromChunks . pure
