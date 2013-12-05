@@ -18,6 +18,7 @@ library
                     old-locale,
                     regex-compat,
                     RSA,
+                    SHA,
                     time,
                     uuid
   exposed-modules:  Aggcat,

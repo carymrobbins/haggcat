@@ -17,15 +17,19 @@ import System.IO
 import Aggcat.Types
 import Aggcat.Saml
 
+getR (Right x) = x
+
+generateSaml = do
+    let customerId = "2"
+    issuerId <- getIssuerId
+    newSaml issuerId customerId
+
 generateAssertion = do
     let customerId = "2"
     issuerId <- getIssuerId
     saml <- newSaml issuerId customerId
-    eitherPkOrError <- getCertificate
-    return $ assert saml eitherPkOrError
-  where
-    assert saml (Right pk) = Right $ newAssertion saml pk
-    assert _ (Left e) = Left e
+    pkey <- getCertificate
+    return $ newAssertion saml pkey
 
 getOAuthTokens (Left e) = return $ Left e
 getOAuthTokens (Right assertion) = do
@@ -42,8 +46,8 @@ getOAuthTokens (Right assertion) = do
     return $ Right response
 
 tryGetOAuthTokens = do
-    eAssertion <- generateAssertion
-    getOAuthTokens eAssertion
+    assertion <- generateAssertion
+    getOAuthTokens $ Right assertion
 
 intuit = do
     consumerKey <- getConsumerKey
@@ -81,14 +85,17 @@ keyDirectory = "/home/crobbins/projects/haskell-aggcat/test-files/"
 readKey :: String -> IO String
 readKey = liftM strip . readFile . (keyDirectory ++)
 
-getCertificate :: IO (Either ErrorMessage RSA.PrivateKey)
-getCertificate = do
-    liftM (extract . decodePrivate) $ BS.readFile "test-files/certificate.key"
-  where
-    extract (Right (OpenSshPrivateKeyRsa pkey)) = Right pkey
-    extract (Right _) = Left "Private key must be RSA, not DSA."
-    extract (Left e) = (Left e)
 
+throwLeft :: Either String OpenSshPrivateKey -> RSA.PrivateKey
+throwLeft (Right (OpenSshPrivateKeyRsa k)) = k
+throwLeft (Right _) = error "Wrong key type"
+throwLeft (Left s)  = error $ "Error reading keys: " ++ s
+
+loadKey :: FilePath -> IO RSA.PrivateKey
+loadKey p = (throwLeft . decodePrivate) `fmap` BS.readFile p
+
+getCertificate :: IO RSA.PrivateKey
+getCertificate = loadKey "test-files/certificate.key"
 
 getConsumerKey :: IO ConsumerKey
 getConsumerKey = readKey "consumer_key"

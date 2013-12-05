@@ -88,7 +88,7 @@ newAssertion saml privateKey =
 
 newSignedSignatureValue :: Saml -> RSA.PrivateKey -> LBS.ByteString -> LBS.ByteString
 newSignedSignatureValue saml privateKey signedDigestValue =
-    Base64.encode . RSA.sign privateKey . strictToLazyBS . SHA1.hash . C.pack $ newSamlSignedInfo
+    Base64.encode . RSA.rsassa_pkcs1_v1_5_sign RSA.ha_SHA1 privateKey . strictToLazyBS . C.pack $ newSamlSignedInfo
         (samlAssertionId saml)
         (LC.unpack signedDigestValue)
 
@@ -128,7 +128,7 @@ newSamlAssertion
     issuerId
     signature
     customerId = cleanSaml "\
-\<saml2:Assertion xmlns:saml2=\"urn:oasis:names:tc:SAML:2.0:assertion\" ID=\"_%" ++ assertionId ++ "\" IssueInstant=\"" ++ isoNow ++ "\" Version=\"2.0\">\
+\<saml2:Assertion xmlns:saml2=\"urn:oasis:names:tc:SAML:2.0:assertion\" ID=\"_" ++ assertionId ++ "\" IssueInstant=\"" ++ isoNow ++ "\" Version=\"2.0\">\
   \<saml2:Issuer>" ++ issuerId ++ "</saml2:Issuer>" ++ signature ++ "<saml2:Subject>\
     \<saml2:NameID Format=\"urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified\">" ++ customerId ++ "</saml2:NameID>\
     \<saml2:SubjectConfirmation Method=\"urn:oasis:names:tc:SAML:2.0:cm:bearer\"></saml2:SubjectConfirmation>\
