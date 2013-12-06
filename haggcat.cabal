@@ -21,8 +21,8 @@ library
                     SHA,
                     time,
                     uuid
-  exposed-modules:  Aggcat,
-                    Aggcat.Saml
+  exposed-modules:  Haggcat,
+                    Haggcat.Saml
   extensions:       OverloadedStrings
   ghc-options:      -Wall
 
