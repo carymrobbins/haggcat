@@ -1,8 +1,10 @@
-module Aggcat.Types where
+module Haggcat.Types where
 
-type IssuerId = String
-type ConsumerKey = String
-type ConsumerSecret = String
-type CustomerId = String
+import Data.ByteString.Lazy as LBS
+
+type IssuerId = LBS.ByteString
+type ConsumerKey = LBS.ByteString
+type ConsumerSecret = LBS.ByteString
+type CustomerId = LBS.ByteString
 type ErrorMessage = String
 
