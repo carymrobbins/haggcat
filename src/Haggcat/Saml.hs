@@ -20,7 +20,7 @@ import Text.Regex
 
 import Haggcat.Types
 
-samlUrl :: LBS.ByteString
+samlUrl :: String
 samlUrl = "https://oauth.intuit.com/oauth/v1/get_access_token_by_saml"
 
 type SamlAssertionId = LBS.ByteString
@@ -39,17 +39,6 @@ data Saml = Saml
     , samlCustomerId :: CustomerId
     } deriving (Show)
 
-isoFormatTime :: UTCTime -> LBS.ByteString
-isoFormatTime = LC.pack . formatTime defaultTimeLocale "%FT%T%QZ"
-
-uuidToHex :: U.UUID -> LBS.ByteString
-uuidToHex uuid = LC.pack $ concatMap (`showHex` "") [a,b,c,d]
-  where
-    (a,b,c,d) = U.toWords uuid
-
-newAssertionId :: IO SamlAssertionId
-newAssertionId = liftM uuidToHex nextRandom
-
 newSaml :: IssuerId -> CustomerId -> IO Saml
 newSaml issuerId customerId = do
     uuid <- newAssertionId
@@ -64,7 +53,7 @@ newSaml issuerId customerId = do
         , samlSignature=""
         }
 
-newAssertion :: Saml -> RSA.PrivateKey -> LBS.ByteString
+newAssertion :: Saml -> RSA.PrivateKey -> SamlAssertion
 newAssertion saml privateKey = Base64.encode assertion
   where
     signedDigestValue = newSignedDigestValue saml
@@ -75,6 +64,19 @@ newAssertion saml privateKey = Base64.encode assertion
         signedDigestValue
         signedSignatureValue
     assertion = newSamlAssertion $ saml { samlSignature=signature }
+
+
+
+isoFormatTime :: UTCTime -> LBS.ByteString
+isoFormatTime = LC.pack . formatTime defaultTimeLocale "%FT%T%QZ"
+
+uuidToHex :: U.UUID -> LBS.ByteString
+uuidToHex uuid = LC.pack $ concatMap (`showHex` "") [a,b,c,d]
+  where
+    (a,b,c,d) = U.toWords uuid
+
+newAssertionId :: IO SamlAssertionId
+newAssertionId = liftM uuidToHex nextRandom
 
 newSignedSignatureValue
     :: Saml -> RSA.PrivateKey -> LBS.ByteString -> LBS.ByteString

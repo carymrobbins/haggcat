@@ -7,4 +7,5 @@ type ConsumerKey = LBS.ByteString
 type ConsumerSecret = LBS.ByteString
 type CustomerId = LBS.ByteString
 type ErrorMessage = String
+type SamlAssertion = LBS.ByteString
 

@@ -22,7 +22,9 @@ library
                     time,
                     uuid
   exposed-modules:  Haggcat,
-                    Haggcat.Saml
+                    Haggcat.Client,
+                    Haggcat.Saml,
+                    Haggcat.Types
   extensions:       OverloadedStrings
   ghc-options:      -Wall
 

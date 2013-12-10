@@ -36,7 +36,7 @@ getOAuthTokens (Left e) = return $ Left e
 getOAuthTokens (Right assertion) = do
     consumerKey <- getConsumerKey
     manager <- newManager def
-    initReq <- parseUrl "https://oauth.intuit.com/oauth/v1/get_access_token_by_saml"
+    initReq <- parseUrl samlUrl
     let req = urlEncodedBody [("saml_assertion", lazyToStrictBS assertion)] $ initReq
                 { method = "POST"
                 , requestHeaders =
@@ -85,7 +85,6 @@ keyDirectory = "test-files/"
 
 readKey :: String -> IO LBS.ByteString
 readKey = liftM (LC.pack . strip) . readFile . (keyDirectory ++)
-
 
 throwLeft :: Either String OpenSshPrivateKey -> RSA.PrivateKey
 throwLeft (Right (OpenSshPrivateKeyRsa k)) = k
