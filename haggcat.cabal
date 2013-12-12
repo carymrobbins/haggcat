@@ -21,10 +21,10 @@ library
                     SHA,
                     time,
                     uuid
-  exposed-modules:  Haggcat,
-                    Haggcat.Client,
+  exposed-modules:  Haggcat.Client,
                     Haggcat.Saml,
-                    Haggcat.Types
+                    Haggcat.Types,
+                    Haggcat.Test
   extensions:       OverloadedStrings
   ghc-options:      -Wall
 

@@ -1,11 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Haggcat.Types where
 
-import Data.ByteString.Lazy as LBS
+import Data.ByteString as BS
 
-type IssuerId = LBS.ByteString
-type ConsumerKey = LBS.ByteString
-type ConsumerSecret = LBS.ByteString
-type CustomerId = LBS.ByteString
+type IssuerId = BS.ByteString
+type ConsumerKey = BS.ByteString
+type ConsumerSecret = BS.ByteString
+type CustomerId = BS.ByteString
 type ErrorMessage = String
-type SamlAssertion = LBS.ByteString
+type SamlAssertion = BS.ByteString
 

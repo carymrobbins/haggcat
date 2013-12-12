@@ -2,10 +2,18 @@
 module Haggcat.Client where
 
 import qualified Codec.Crypto.RSA as RSA
+import Control.Monad.Zip (mzip)
+import Crypto.PubKey.OpenSsh
 import qualified Data.ByteString as BS
-import qualified Data.ByteString as LBS
+import qualified Data.ByteString.Char8 as C
+import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.Lazy.Char8 as LC
+import Data.Conduit
+import Data.Maybe
 import Network.HTTP.Conduit
 
+import Haggcat.Classes
+import Haggcat.Instances
 import Haggcat.Saml
 import Haggcat.Types
 
@@ -15,7 +23,7 @@ data Client = Client
     , issuerId :: IssuerId
     , customerId :: CustomerId
     , privateKeyPath :: FilePath
-    }
+    } deriving (Show)
 
 data UserClient = UserClient
     { userClient :: Client
@@ -23,7 +31,7 @@ data UserClient = UserClient
     , userSaml :: Saml
     , userOAuthToken :: OAuthToken
     , userOAuthTokenSecret :: OAuthTokenSecret
-    }
+    } deriving (Show)
 
 type OAuthToken = LBS.ByteString
 type OAuthTokenSecret = LBS.ByteString
@@ -32,7 +40,7 @@ loadClient :: Client -> IO UserClient
 loadClient client = do
     pkey <- loadPrivateKey $ privateKeyPath client
     saml <- newSaml (issuerId client) (customerId client)
-    assertion <- newAssertion saml pkey
+    let assertion = newAssertion saml pkey
     (oToken, oSecret) <- getOAuthTokens client assertion
     return $ UserClient
         { userClient=client
@@ -42,24 +50,30 @@ loadClient client = do
         , userOAuthTokenSecret=oSecret
         }
 
-getOAuthTokens :: Client -> SamlAssertion -> IO (OAuthToken, OAuthTokenSecret)
+getOAuthTokens
+    :: Client -> SamlAssertion -> IO (OAuthToken, OAuthTokenSecret)
 getOAuthTokens client assertion = do
     manager <- newManager def
     initReq <- parseUrl samlUrl
-    let auth_headers = "OAuth oauth_consumer_key=" `LBS.append`
-                       consumerKey client
-    let body = urlEncodedBody [("saml_assertion", lazyToStrictBS assertion)]
-    let req = body $ initReq { method="POST"
-                             , requestHeaders=[("Authorization", auth_headers)]
-                             }
+    let headers = "OAuth oauth_consumer_key=" <+> consumerKey client
+    let body = [("saml_assertion", assertion)]
+    let req = urlEncodedBody body $ initReq
+                { method="POST"
+                , requestHeaders=[("Authorization", headers)]
+                }
     response <- runResourceT $ httpLbs req manager
-    return . parseBody . responseBody $ response
+    let result = parseBody . responseBody $ response
+    let get k = lookup k result
+    let maybeTokens = mzip (get "oauth_token") (get "oauth_token_secret")
+    return $ fromMaybe
+        (error $ "Tokens not found in response: " ++ show result)
+        maybeTokens
 
-parseBody :: LC.ByteString -> [(LC.ByteString, LC.ByteString)]
+parseBody :: LBS.ByteString -> [(LBS.ByteString, LBS.ByteString)]
 parseBody = fmap ((fmap (LC.drop 1)) . LC.break (=='=')) . LC.split '&'
 
 loadPrivateKey :: FilePath -> IO RSA.PrivateKey
-loadPrivateKey path = (throwLeft . decodePrivate) `fmap` BS.readFile p
+loadPrivateKey p = (throwLeft . decodePrivate) `fmap` BS.readFile p
 
 throwLeft :: Either String OpenSshPrivateKey -> RSA.PrivateKey
 throwLeft (Right (OpenSshPrivateKeyRsa k)) = k
