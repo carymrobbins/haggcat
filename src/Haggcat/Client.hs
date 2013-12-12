@@ -55,7 +55,7 @@ getOAuthTokens
 getOAuthTokens client assertion = do
     manager <- newManager def
     initReq <- parseUrl samlUrl
-    let headers = "OAuth oauth_consumer_key=" <+> consumerKey client
+    let headers = "OAuth oauth_consumer_key=\"" <+> consumerKey client <+> "\""
     let body = [("saml_assertion", assertion)]
     let req = urlEncodedBody body $ initReq
                 { method="POST"

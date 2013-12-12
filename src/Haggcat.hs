@@ -37,7 +37,7 @@ getOAuthTokens (Right assertion) = do
     consumerKey <- getConsumerKey
     manager <- newManager def
     initReq <- parseUrl samlUrl
-    let req = urlEncodedBody [("saml_assertion", lazyToStrictBS assertion)] $ initReq
+    let req = urlEncodedBody [("saml_assertion", assertion)] $ initReq
                 { method = "POST"
                 , requestHeaders =
                     [("Authorization",
@@ -83,8 +83,8 @@ withEcho echo action = do
 keyDirectory :: String
 keyDirectory = "test-files/"
 
-readKey :: String -> IO LBS.ByteString
-readKey = liftM (LC.pack . strip) . readFile . (keyDirectory ++)
+readKey :: String -> IO BS.ByteString
+readKey = liftM (C.pack . strip) . readFile . (keyDirectory ++)
 
 throwLeft :: Either String OpenSshPrivateKey -> RSA.PrivateKey
 throwLeft (Right (OpenSshPrivateKeyRsa k)) = k

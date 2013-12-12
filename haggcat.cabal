@@ -23,8 +23,7 @@ library
                     uuid
   exposed-modules:  Haggcat.Client,
                     Haggcat.Saml,
-                    Haggcat.Types,
-                    Haggcat.Test
+                    Haggcat.Types
   extensions:       OverloadedStrings
   ghc-options:      -Wall
 
