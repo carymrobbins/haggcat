@@ -4,10 +4,11 @@ cabal-version:  >=1.2
 build-type:     Simple
 author:         Cary Robbins
 
-library
+Library
   hs-source-dirs:   src
   build-depends:    base >= 4,
                     aeson,
+                    async,
                     base64-bytestring,
                     bytestring,
                     conduit,
@@ -16,14 +17,19 @@ library
                     http-conduit,
                     MissingH,
                     old-locale,
+                    parallel,
                     regex-compat,
                     RSA,
                     SHA,
                     time,
+                    transformers,
                     uuid
-  exposed-modules:  Haggcat.Client,
-                    Haggcat.Saml,
-                    Haggcat.Types
+  exposed-modules:  Haggcat.Client
   extensions:       OverloadedStrings
   ghc-options:      -Wall
+
+Test-Suite integration-test
+  type:             exitcode-stdio-1.0
+  main-is:          IntegrationTests.hs
+  hs-source-dirs:   tests src
 

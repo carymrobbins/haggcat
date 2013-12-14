@@ -26,3 +26,13 @@ cabal install --only-dependencies
 cabal build
 ```
 
+Testing
+-------
+
+```bash
+# You only need to enable the tests once.
+cabal configure --enable-tests
+cabal build
+cabal test
+```
+
