@@ -8,26 +8,23 @@ import System.Exit (exitFailure)
 
 import Haggcat.Client
 
--- To run the tests, create a test-files directory in the root of
--- this project.  Create files containing consumerKey, consumerSecret,
--- issuerId, customerId, and certificate.key
+tests :: Client -> [(String, IO ())]
+tests client =
+    [("test_loadClient", do
+        userClient <- loadClient client
+        return ()
+    )]
 
 getClient :: IO Client
-getClient = do
-    consumerKey <- readTestData "consumerKey"
-    consumerSecret <- readTestData "consumerSecret"
-    issuerId <- readTestData "issuerId"
-    customerId <- readTestData "customerId"
-    return Client
-        { consumerKey=consumerKey
-        , consumerSecret=consumerSecret
-        , issuerId=issuerId
-        , customerId=customerId
-        , privateKeyPath="test-files/certificate.key"
-        }
+getClient = liftM5 Client
+    (readTestData "test-files/consumerKey")
+    (readTestData "test-files/consumerSecret")
+    (readTestData "test-files/issuerId")
+    (readTestData "test-files/customerId")
+    (return       "test-files/certificate.key")
 
 readTestData :: String -> IO C.ByteString
-readTestData = liftM (C.pack . strip) . readFile . ("test-files/" ++)
+readTestData = liftM (C.pack . strip) . readFile
 
 main :: IO ()
 main = do
@@ -38,11 +35,4 @@ runTest :: (String, IO ()) -> IO ()
 runTest (testName, test) = do
     putStrLn $ "*** Running Test: " ++ testName
     test
-
-tests :: Client -> [(String, IO ())]
-tests client =
-    [("test_loadClient", do
-        userClient <- loadClient client
-        return ()
-    )]
 

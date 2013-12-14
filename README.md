@@ -29,10 +29,12 @@ cabal build
 Testing
 -------
 
+To run the tests, create a test-files directory in the root of
+this project.  Create files containing consumerKey, consumerSecret,
+issuerId, customerId, and certificate.key, which is your X509 private key.
+
 ```bash
-# You only need to enable the tests once.
 cabal configure --enable-tests
-cabal build
-cabal test
+cabal build && cabal test
 ```
 
