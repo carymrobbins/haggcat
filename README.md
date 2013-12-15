@@ -14,7 +14,11 @@ the latest version of cabal.
 ```bash
 cd /where/you/want/to/clone
 git clone git://github.com/haskell/cabal.git
-cd cabal/cabal-install
+cd cabal
+# The official way to install cabal-install.
+cabal install Cabal/ cabal-install/
+# If you have issues, try the bootstrap method instead.
+cd cabal-install
 ./bootstrap.sh
 ```
 
