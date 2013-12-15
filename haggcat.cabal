@@ -14,6 +14,7 @@ Library
                     conduit,
                     cryptohash,
                     crypto-pubkey-openssh,
+                    filepath,
                     http-conduit,
                     MissingH,
                     old-locale,
