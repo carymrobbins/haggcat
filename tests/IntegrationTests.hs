@@ -1,28 +1,20 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 module Main where
 
-import Control.Monad
-import qualified Data.ByteString.Char8 as C
-import Data.String.Utils
-import System.Exit (exitFailure)
+import Data.ByteString.Lazy as LBS
+import Test.Framework
+import Test.Framework.TH
+import Test.Framework.Providers.HUnit
+import Test.HUnit hiding (test)
 
 import Haggcat.Client
 import Haggcat.TestHelper
 
-tests :: Client -> [(String, IO ())]
-tests client =
-    [("test_loadClient", do
-        userClient <- loadClient client
-        return ()
-    )]
-
-main :: IO ()
-main = do
+case_get_oauth_tokens = do
     client <- getTestClient "test-files"
-    mapM_ runTest . tests $ client
+    userClient <- loadClient client
+    47 @=? (LBS.length $ userOAuthToken userClient)
+    40 @=? (LBS.length $ userOAuthTokenSecret userClient)
 
-runTest :: (String, IO ()) -> IO ()
-runTest (testName, test) = do
-    putStrLn $ "*** Running Test: " ++ testName
-    test
+main = $(defaultMainGenerator)
 
