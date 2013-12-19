@@ -39,6 +39,6 @@ issuerId, customerId, and certificate.key, which is your X509 private key.
 
 ```bash
 cabal configure --enable-tests
-cabal build && cabal test
+cabal test
 ```
 
