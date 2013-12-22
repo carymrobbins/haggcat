@@ -17,6 +17,9 @@ import Haggcat.Instances
 import Haggcat.Saml
 import Haggcat.Types
 
+baseUrl :: String
+baseUrl = "https://financialdatafeed.platform.intuit.com/rest-war/v1"
+
 data Client = Client
     { consumerKey :: ConsumerKey
     , consumerSecret :: ConsumerSecret
