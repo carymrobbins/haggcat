@@ -8,6 +8,12 @@ A Haskell client for Intuit's Customer Account Data API.
 Building
 --------
 
+If you are running Ubuntu you will need to install the following packages -
+
+```bash
+sudo apt-get install libcurl4-openssl-dev
+```
+
 Be sure to use cabal sandbox.  If you don't already have it, install it from
 the latest version of cabal.
 
