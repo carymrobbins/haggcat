@@ -1,6 +1,6 @@
-name:           haskell-aggcat
+name:           haggcat
 version:        0.1
-cabal-version:  >=1.2
+cabal-version:  >=1.8
 build-type:     Simple
 author:         Cary Robbins
 
@@ -26,16 +26,23 @@ Library
                   , time
                   , transformers
                   , uuid
-  exposed-modules:  Haggcat.Client
+  exposed-modules:  Haggcat.Classes
+                  , Haggcat.Client
+                  , Haggcat.Instances
+                  , Haggcat.Saml
                   , Haggcat.TestHelper
+                  , Haggcat.Types
   extensions:       OverloadedStrings
   ghc-options:      -Wall
 
 Test-Suite integration-test
   type:             exitcode-stdio-1.0
   main-is:          IntegrationTests.hs
-  hs-source-dirs:   tests src
-  build-depends:    HUnit
+  hs-source-dirs:   tests
+  build-depends:    haggcat
+                  , base >= 4
+                  , bytestring
+                  , HUnit
                   , test-framework
                   , test-framework-hunit
                   , test-framework-th
