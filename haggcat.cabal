@@ -1,51 +1,62 @@
-name:           haggcat
-version:        0.1
-cabal-version:  >=1.8
-build-type:     Simple
-author:         Cary Robbins
+name:                haggcat
+version:             0.1
+synopsis:            Haskell client for the Intuit Aggcat API.
+homepage:            http://github.com/carymrobbins/haggcat.git
+license:             MIT
+license-file:        LICENSE
+author:              Cary M. Robbins
+maintainer:          carymrobbins@gmail.com
+copyright:           Copyright 2014 Cary M. Robbins
+category:            Financial
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+tested-with:         GHC == 7.6.3
+description:         This library is currently under development.
 
-Library
-  hs-source-dirs:   src
-  build-depends:    base >= 4
-                  , aeson
-                  , async
-                  , base64-bytestring
-                  , bytestring
-                  , conduit
-                  , cryptohash
-                  , crypto-pubkey-openssh
-                  , filepath
-                  , hoauth
-                  , http-conduit
-                  , MissingH
-                  , old-locale
-                  , parallel
-                  , regex-compat
-                  , RSA
-                  , SHA
-                  , time
-                  , transformers
-                  , uuid
-  exposed-modules:  Haggcat.Classes
-                  , Haggcat.Client
-                  , Haggcat.Instances
-                  , Haggcat.Saml
-                  , Haggcat.TestHelper
-                  , Haggcat.Types
-  extensions:       OverloadedStrings
-  ghc-options:      -Wall
+library
+  exposed-modules:     Haggcat.Client
+                     , Haggcat.Classes
+                     , Haggcat.TestHelper
+                     , Haggcat.Types
+                     , Haggcat.Saml
+  other-extensions:    OverloadedStrings
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+  build-depends:       base >= 4 && <= 4.6.0.1
+                     , aeson
+                     , async
+                     , base64-bytestring
+                     , bytestring
+                     , conduit
+                     , cryptohash
+                     , crypto-pubkey-openssh
+                     , filepath
+                     , hoauth
+                     , http-conduit
+                     , MissingH
+                     , old-locale
+                     , parallel
+                     , regex-compat
+                     , RSA
+                     , SHA
+                     , time
+                     , transformers
+                     , uuid
 
 Test-Suite integration-test
-  type:             exitcode-stdio-1.0
-  main-is:          IntegrationTests.hs
-  hs-source-dirs:   tests
-  build-depends:    haggcat
-                  , base >= 4
-                  , bytestring
-                  , HUnit
-                  , test-framework
-                  , test-framework-hunit
-                  , test-framework-th
-  extensions:       OverloadedStrings
-                  , TemplateHaskell
+  type:                exitcode-stdio-1.0
+  main-is:             IntegrationTests.hs
+  hs-source-dirs:      tests
+  default-language:    Haskell2010
+  build-depends:       haggcat
+                     , base >= 4 && <= 4.6.0.1
+                     , bytestring
+                     , HUnit
+                     , test-framework
+                     , test-framework-hunit
+                     , test-framework-th
+  other-extensions:    OverloadedStrings
+                     , TemplateHaskell
 

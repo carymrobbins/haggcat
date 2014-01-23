@@ -8,9 +8,7 @@ import qualified Crypto.Hash.SHA1 as SHA1
 import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString.Lazy.Char8 as LC
 import qualified Data.ByteString.Char8 as C
-import Data.String.Utils (strip)
 import Data.Time
 import Data.UUID as U
 import Data.UUID.V4 as U
@@ -18,7 +16,6 @@ import Numeric (showHex)
 import System.Locale (defaultTimeLocale)
 
 import Haggcat.Classes
-import Haggcat.Instances
 import Haggcat.Types
 
 samlUrl :: String

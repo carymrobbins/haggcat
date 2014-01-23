@@ -2,10 +2,10 @@
 module Haggcat.Client where
 
 import qualified Codec.Crypto.RSA as RSA
-import Control.Monad.Zip (mzip)
+import Control.Monad (ap)
 import Crypto.PubKey.OpenSsh
 import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as C
+import Data.ByteString.Char8 ()
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Lazy.Char8 as LC
 import Data.Conduit
@@ -13,7 +13,6 @@ import Data.Maybe
 import Network.HTTP.Conduit
 
 import Haggcat.Classes
-import Haggcat.Instances
 import Haggcat.Saml
 import Haggcat.Types
 
@@ -67,7 +66,8 @@ getOAuthTokens client assertion = do
     response <- runResourceT $ httpLbs req manager
     let result = parseBody . responseBody $ response
     let get k = lookup k result
-    let maybeTokens = mzip (get "oauth_token") (get "oauth_token_secret")
+    let maybeTokens = Just (,) `ap` get "oauth_token"
+                               `ap` get "oauth_token_secret"
     return $ fromMaybe
         (error $ "Tokens not found in response: " ++ show result)
         maybeTokens
