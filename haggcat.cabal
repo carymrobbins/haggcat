@@ -16,7 +16,6 @@ description:         This library is currently under development.
 
 library
   exposed-modules:     Haggcat.Client
-                     , Haggcat.Classes
                      , Haggcat.TestHelper
                      , Haggcat.Types
                      , Haggcat.Saml

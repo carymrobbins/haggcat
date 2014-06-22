@@ -1,37 +1,37 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Haggcat.Client where
 
-import qualified Codec.Crypto.RSA as RSA
-import Control.Monad (ap)
-import Crypto.PubKey.OpenSsh
-import qualified Data.ByteString as BS
-import Data.ByteString.Char8 ()
-import qualified Data.ByteString.Lazy as LBS
+import qualified Codec.Crypto.RSA           as RSA
+import           Control.Monad              (ap)
+import           Crypto.PubKey.OpenSsh
+import qualified Data.ByteString            as BS
+import           Data.ByteString.Char8      ()
+import qualified Data.ByteString.Lazy       as LBS
 import qualified Data.ByteString.Lazy.Char8 as LC
-import Data.Conduit
-import Data.Maybe
-import Network.HTTP.Conduit
+import           Data.Conduit
+import           Data.Maybe
+import           Data.Monoid                ((<>))
+import           Network.HTTP.Conduit
 
-import Haggcat.Classes
-import Haggcat.Saml
-import Haggcat.Types
+import           Haggcat.Saml
+import           Haggcat.Types
 
 baseUrl :: String
 baseUrl = "https://financialdatafeed.platform.intuit.com/rest-war/v1"
 
 data Client = Client
-    { consumerKey :: ConsumerKey
+    { consumerKey    :: ConsumerKey
     , consumerSecret :: ConsumerSecret
-    , issuerId :: IssuerId
-    , customerId :: CustomerId
+    , issuerId       :: IssuerId
+    , customerId     :: CustomerId
     , privateKeyPath :: FilePath
     } deriving (Show)
 
 data UserClient = UserClient
-    { userClient :: Client
-    , userPrivateKey :: RSA.PrivateKey
-    , userSaml :: Saml
-    , userOAuthToken :: OAuthToken
+    { userClient           :: Client
+    , userPrivateKey       :: RSA.PrivateKey
+    , userSaml             :: Saml
+    , userOAuthToken       :: OAuthToken
     , userOAuthTokenSecret :: OAuthTokenSecret
     } deriving (Show)
 
@@ -57,7 +57,7 @@ getOAuthTokens
 getOAuthTokens client assertion = do
     manager <- newManager def
     initReq <- parseUrl samlUrl
-    let headers = "OAuth oauth_consumer_key=\"" <+> consumerKey client <+> "\""
+    let headers = "OAuth oauth_consumer_key=\"" <> consumerKey client <> "\""
     let body = [("saml_assertion", assertion)]
     let req = urlEncodedBody body $ initReq
                 { method="POST"
