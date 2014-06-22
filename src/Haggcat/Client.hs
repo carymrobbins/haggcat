@@ -19,41 +19,40 @@ import           Haggcat.Types
 baseUrl :: String
 baseUrl = "https://financialdatafeed.platform.intuit.com/rest-war/v1"
 
-data Client = Client
+data Config = Config
     { consumerKey    :: ConsumerKey
     , consumerSecret :: ConsumerSecret
     , issuerId       :: IssuerId
     , customerId     :: CustomerId
     , privateKeyPath :: FilePath
-    } deriving (Show)
+    } deriving (Show, Read)
 
-data UserClient = UserClient
-    { userClient           :: Client
-    , userPrivateKey       :: RSA.PrivateKey
-    , userSaml             :: Saml
-    , userOAuthToken       :: OAuthToken
-    , userOAuthTokenSecret :: OAuthTokenSecret
+data Client = Client
+    { clientConfig           :: Config
+    , clientPrivateKey       :: RSA.PrivateKey
+    , clientSaml             :: Saml
+    , clientOAuthToken       :: OAuthToken
+    , clientOAuthTokenSecret :: OAuthTokenSecret
     } deriving (Show)
 
 type OAuthToken = LBS.ByteString
 type OAuthTokenSecret = LBS.ByteString
 
-loadClient :: Client -> IO UserClient
-loadClient client = do
-    pkey <- loadPrivateKey $ privateKeyPath client
-    saml <- newSaml (issuerId client) (customerId client)
+loadClient :: Config -> IO Client
+loadClient config = do
+    pkey <- loadPrivateKey $ privateKeyPath config
+    saml <- newSaml (issuerId config) (customerId config)
     let assertion = newAssertion saml pkey
-    (oToken, oSecret) <- getOAuthTokens client assertion
-    return $ UserClient
-        { userClient=client
-        , userPrivateKey=pkey
-        , userSaml=saml
-        , userOAuthToken=oToken
-        , userOAuthTokenSecret=oSecret
+    (oToken, oSecret) <- getOAuthTokens config assertion
+    return $ Client
+        { clientConfig=config
+        , clientPrivateKey=pkey
+        , clientSaml=saml
+        , clientOAuthToken=oToken
+        , clientOAuthTokenSecret=oSecret
         }
 
-getOAuthTokens
-    :: Client -> SamlAssertion -> IO (OAuthToken, OAuthTokenSecret)
+getOAuthTokens :: Config -> SamlAssertion -> IO (OAuthToken, OAuthTokenSecret)
 getOAuthTokens client assertion = do
     manager <- newManager def
     initReq <- parseUrl samlUrl

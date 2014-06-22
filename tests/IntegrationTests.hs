@@ -11,10 +11,9 @@ import Haggcat.Client
 import Haggcat.TestHelper
 
 case_get_oauth_tokens = do
-    client <- getTestClient "test-files"
-    userClient <- loadClient client
-    48 @=? (LBS.length $ userOAuthToken userClient)
-    40 @=? (LBS.length $ userOAuthTokenSecret userClient)
+    client <- loadClient =<< getTestConfig "test-files/config"
+    48 @=? (LBS.length $ clientOAuthToken client)
+    40 @=? (LBS.length $ clientOAuthTokenSecret client)
 
 main = $(defaultMainGenerator)
 
