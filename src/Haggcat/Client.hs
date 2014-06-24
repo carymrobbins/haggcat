@@ -12,6 +12,7 @@ import           Data.Conduit
 import           Data.Maybe
 import           Data.Monoid                ((<>))
 import           Network.HTTP.Conduit
+import qualified Web.Authenticate.OAuth as OAuth
 
 import           Haggcat.Saml
 import           Haggcat.Types
@@ -31,8 +32,8 @@ data Client = Client
     { clientConfig           :: Config
     , clientPrivateKey       :: RSA.PrivateKey
     , clientSaml             :: Saml
-    , clientOAuthToken       :: OAuthToken
-    , clientOAuthTokenSecret :: OAuthTokenSecret
+    , clientOAuth            :: OAuth.OAuth
+    , clientCredential       :: OAuth.Credential
     } deriving (Show)
 
 type OAuthToken = LBS.ByteString
@@ -44,19 +45,24 @@ loadClient config = do
     saml <- newSaml (issuerId config) (customerId config)
     let assertion = newAssertion saml pkey
     (oToken, oSecret) <- getOAuthTokens config assertion
+    let oauth = OAuth.newOAuth { OAuth.oauthServerName="oauth.intuit.com"
+                               , OAuth.oauthConsumerKey=consumerKey config
+                               , OAuth.oauthConsumerSecret=consumerSecret config
+                               }
+    let cred = OAuth.newCredential (LBS.toStrict oToken) (LBS.toStrict oSecret)
     return $ Client
         { clientConfig=config
         , clientPrivateKey=pkey
         , clientSaml=saml
-        , clientOAuthToken=oToken
-        , clientOAuthTokenSecret=oSecret
+        , clientOAuth=oauth
+        , clientCredential=cred
         }
 
 getOAuthTokens :: Config -> SamlAssertion -> IO (OAuthToken, OAuthTokenSecret)
-getOAuthTokens client assertion = do
+getOAuthTokens config assertion = do
     manager <- newManager def
     initReq <- parseUrl samlUrl
-    let headers = "OAuth oauth_consumer_key=\"" <> consumerKey client <> "\""
+    let headers = "OAuth oauth_consumer_key=\"" <> consumerKey config <> "\""
     let body = [("saml_assertion", assertion)]
     let req = urlEncodedBody body $ initReq
                 { method="POST"
@@ -68,8 +74,20 @@ getOAuthTokens client assertion = do
     let maybeTokens = Just (,) `ap` get "oauth_token"
                                `ap` get "oauth_token_secret"
     return $ fromMaybe
+        -- TODO: Better error handling, possibly use Either.
         (error $ "Tokens not found in response: " ++ show result)
         maybeTokens
+
+getAccounts :: Client -> IO LBS.ByteString
+getAccounts client = do
+    initReq <- parseUrl $ baseUrl <> "/accounts"
+    let req = initReq { requestHeaders=[ ("Content-Type", "application/json")
+                                       , ("Accept", "application/json")
+                                       ] }
+    res <- withManager $ \m -> do
+        signedreq <- OAuth.signOAuth (clientOAuth client) (clientCredential client) req
+        httpLbs signedreq m
+    return $ responseBody res
 
 parseBody :: LBS.ByteString -> [(LBS.ByteString, LBS.ByteString)]
 parseBody = fmap ((fmap (LC.drop 1)) . LC.break (=='=')) . LC.split '&'
@@ -81,4 +99,3 @@ throwLeft :: Either String OpenSshPrivateKey -> RSA.PrivateKey
 throwLeft (Right (OpenSshPrivateKeyRsa k)) = k
 throwLeft (Right _) = error "Wrong key type"
 throwLeft (Left s)  = error $ "Error reading keys: " ++ s
-

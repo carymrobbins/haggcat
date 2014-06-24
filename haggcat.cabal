@@ -26,6 +26,7 @@ library
   build-depends:       base >= 4 && <= 4.6.0.1
                      , aeson
                      , async
+                     , authenticate-oauth
                      , base64-bytestring
                      , bytestring
                      , conduit
