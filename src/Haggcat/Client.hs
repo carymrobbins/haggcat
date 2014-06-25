@@ -91,10 +91,14 @@ makeRequest path client = do
         httpLbs signedreq m
     return $ responseBody res
 
+requestAndDecode :: DecodeContext a b => String -> Client -> IO (Either String [a])
+requestAndDecode path = fmap decodeResponse . makeRequest path
+
+getAccounts :: Client -> IO LBS.ByteString
 getAccounts = makeRequest "accounts"
 
 getInstitutions :: Client -> IO (Either String [Institution])
-getInstitutions = fmap decodeInstitutions . makeRequest "institutions"
+getInstitutions = requestAndDecode "institutions"
 
 parseBody :: LBS.ByteString -> [(LBS.ByteString, LBS.ByteString)]
 parseBody = fmap ((fmap (LC.drop 1)) . LC.break (=='=')) . LC.split '&'
