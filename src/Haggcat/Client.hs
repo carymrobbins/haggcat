@@ -14,6 +14,7 @@ import           Data.Monoid                ((<>))
 import           Network.HTTP.Conduit
 import qualified Web.Authenticate.OAuth as OAuth
 
+import           Haggcat.JSON
 import           Haggcat.Saml
 import           Haggcat.Types
 
@@ -78,16 +79,22 @@ getOAuthTokens config assertion = do
         (error $ "Tokens not found in response: " ++ show result)
         maybeTokens
 
-getAccounts :: Client -> IO LBS.ByteString
-getAccounts client = do
-    initReq <- parseUrl $ baseUrl <> "/accounts"
-    let req = initReq { requestHeaders=[ ("Content-Type", "application/json")
+makeRequest :: String -> Client -> IO LBS.ByteString
+makeRequest path client = do
+    initReq <- parseUrl $ baseUrl <> "/" <> path
+    let req = initReq { responseTimeout=Nothing
+                      , requestHeaders=[ ("Content-Type", "application/json")
                                        , ("Accept", "application/json")
                                        ] }
     res <- withManager $ \m -> do
         signedreq <- OAuth.signOAuth (clientOAuth client) (clientCredential client) req
         httpLbs signedreq m
     return $ responseBody res
+
+getAccounts = makeRequest "accounts"
+
+getInstitutions :: Client -> IO (Either String [Institution])
+getInstitutions = fmap decodeInstitutions . makeRequest "institutions"
 
 parseBody :: LBS.ByteString -> [(LBS.ByteString, LBS.ByteString)]
 parseBody = fmap ((fmap (LC.drop 1)) . LC.break (=='=')) . LC.split '&'
