@@ -14,21 +14,7 @@ If you are running Ubuntu you will need to install the following packages -
 sudo apt-get install libcurl4-openssl-dev
 ```
 
-Be sure to use cabal sandbox.  If you don't already have it, install it from
-the latest version of cabal.
-
-```bash
-cd /where/you/want/to/clone
-git clone git://github.com/haskell/cabal.git
-cd cabal
-# The official way to install cabal-install.
-cabal install Cabal/ cabal-install/
-# If you have issues, try the bootstrap method instead.
-cd cabal-install
-./bootstrap.sh
-```
-
-Once you have the latest version of cabal -
+To build in a sandbox -
 
 ```bash
 cabal sandbox init
@@ -40,11 +26,21 @@ Testing
 -------
 
 To run the tests, create a test-files directory in the root of
-this project.  Create files containing consumerKey, consumerSecret,
-issuerId, customerId, and certificate.key, which is your X509 private key.
+this project.  You will need two files: config and certificate.key, which is your X509 private key.
+Config should contain something along the lines of -
 
-```bash
-cabal configure --enable-tests
-cabal test
+```haskell
+Config { consumerKey    = "xxxxxxxxx"
+       , consumerSecret = "yyyyyyyyy"
+       , issuerId = "myapp.12345.intuit.ipp.prod"
+       , customerId = "0"
+       , privateKeyPath = "test-files/certificate.key"
+       }
 ```
 
+You can then install the test dependencies and run the test suite via -
+
+```bash
+cabal install --enable-tests --dependencies-only
+cabal test
+```
