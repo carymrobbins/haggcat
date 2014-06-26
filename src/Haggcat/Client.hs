@@ -4,6 +4,7 @@ module Haggcat.Client where
 import qualified Codec.Crypto.RSA           as RSA
 import           Control.Monad              (ap)
 import           Crypto.PubKey.OpenSsh
+import qualified Data.Aeson                 as Aeson
 import qualified Data.ByteString            as BS
 import           Data.ByteString.Char8      ()
 import qualified Data.ByteString.Lazy       as LBS
@@ -14,7 +15,7 @@ import           Data.Monoid                ((<>))
 import           Network.HTTP.Conduit
 import qualified Web.Authenticate.OAuth as OAuth
 
-import           Haggcat.JSON
+import           Haggcat.JSON.Decoder
 import           Haggcat.Saml
 import           Haggcat.Types
 
@@ -79,26 +80,35 @@ getOAuthTokens config assertion = do
         (error $ "Tokens not found in response: " ++ show result)
         maybeTokens
 
-makeRequest :: String -> Client -> IO LBS.ByteString
-makeRequest path client = do
-    initReq <- parseUrl $ baseUrl <> "/" <> path
-    let req = initReq { responseTimeout=Nothing
-                      , requestHeaders=[ ("Content-Type", "application/json")
-                                       , ("Accept", "application/json")
-                                       ] }
+makeRequest urlPath httpMethod body headers client = do
+    -- TODO: Refactor me!
+    initReq <- parseUrl $ baseUrl <> "/" <> urlPath
+    let applyBody = if httpMethod == "POST" then urlEncodedBody body else id
+    let req = applyBody $ initReq
+                { method=httpMethod
+                , responseTimeout=Nothing
+                , requestHeaders=[ ("Content-Type", "application/json")
+                                 , ("Accept", "application/json")
+                                 ] ++ headers
+                }
     res <- withManager $ \m -> do
         signedreq <- OAuth.signOAuth (clientOAuth client) (clientCredential client) req
         httpLbs signedreq m
     return $ responseBody res
 
-requestAndDecode :: DecodeContext a b => String -> Client -> IO (Either String [a])
-requestAndDecode path = fmap decodeResponse . makeRequest path
+requestAndDecode urlPath httpMethod body headers client =
+    fmap decodeResponse $ makeRequest urlPath httpMethod body headers client
 
 getAccounts :: Client -> IO LBS.ByteString
-getAccounts = makeRequest "accounts"
+getAccounts = makeRequest "accounts" "GET" [] []
 
 getInstitutions :: Client -> IO (Either String [Institution])
-getInstitutions = requestAndDecode "institutions"
+getInstitutions = requestAndDecode "institutions" "GET" [] []
+
+getInstitutionDetails :: String -> Client -> IO (Either String Institution)
+getInstitutionDetails instId client = do
+    res <- makeRequest ("institutions/" <> instId) "GET" [] [] client
+    return $ Aeson.eitherDecode res
 
 parseBody :: LBS.ByteString -> [(LBS.ByteString, LBS.ByteString)]
 parseBody = fmap ((fmap (LC.drop 1)) . LC.break (=='=')) . LC.split '&'

@@ -16,7 +16,10 @@ description:         This library is currently under development.
 
 library
   exposed-modules:     Haggcat.Client
-                     , Haggcat.JSON
+                     , Haggcat.JSON.Decoder
+                     , Haggcat.JSON.Address
+                     , Haggcat.JSON.Institution
+                     , Haggcat.JSON.Keys
                      , Haggcat.TestHelper
                      , Haggcat.Types
                      , Haggcat.Saml

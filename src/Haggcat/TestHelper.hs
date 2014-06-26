@@ -5,7 +5,6 @@ import qualified Data.Aeson           as Aeson
 import qualified Data.ByteString.Lazy as LBS
 
 import           Haggcat.Client
-import           Haggcat.JSON
 import           Haggcat.Types
 
 getTestConfig :: FilePath -> IO Config
