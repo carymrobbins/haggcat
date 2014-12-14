@@ -3,16 +3,16 @@
 module Haggcat.JSON.Address where
 
 import qualified Data.Aeson      as Aeson
-import qualified Data.ByteString as LBS
+import           Data.Text       (Text)
 import           GHC.Generics
 
-data Address = Address { address1   :: Maybe LBS.ByteString
-                       , address2   :: Maybe LBS.ByteString
-                       , address3   :: Maybe LBS.ByteString
-                       , city       :: Maybe LBS.ByteString
-                       , state      :: Maybe LBS.ByteString
+data Address = Address { address1   :: Maybe Text
+                       , address2   :: Maybe Text
+                       , address3   :: Maybe Text
+                       , city       :: Maybe Text
+                       , state      :: Maybe Text
                        , postalCode :: Maybe Int
-                       , country    :: Maybe LBS.ByteString
+                       , country    :: Maybe Text
                        } deriving (Show, Read, Generic)
 instance Aeson.FromJSON Address
 instance Aeson.ToJSON Address

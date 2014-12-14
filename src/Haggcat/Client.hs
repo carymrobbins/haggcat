@@ -2,16 +2,18 @@
 module Haggcat.Client where
 
 import qualified Codec.Crypto.RSA           as RSA
+import           Control.Applicative        ((<$>))
 import           Control.Monad              (ap)
+import           Control.Monad.Trans.Resource (runResourceT)
 import           Crypto.PubKey.OpenSsh
 import qualified Data.Aeson                 as Aeson
 import qualified Data.ByteString            as BS
 import           Data.ByteString.Char8      ()
 import qualified Data.ByteString.Lazy       as LBS
 import qualified Data.ByteString.Lazy.Char8 as LC
-import           Data.Conduit
 import           Data.Maybe
 import           Data.Monoid                ((<>))
+import           Network.HTTP.Client.TLS    (tlsManagerSettings)
 import           Network.HTTP.Conduit
 import qualified Web.Authenticate.OAuth as OAuth
 
@@ -52,7 +54,7 @@ loadClient config = do
                                , OAuth.oauthConsumerSecret=consumerSecret config
                                }
     let cred = OAuth.newCredential (LBS.toStrict oToken) (LBS.toStrict oSecret)
-    return $ Client
+    return Client
         { clientConfig=config
         , clientPrivateKey=pkey
         , clientSaml=saml
@@ -62,7 +64,7 @@ loadClient config = do
 
 getOAuthTokens :: Config -> SamlAssertion -> IO (OAuthToken, OAuthTokenSecret)
 getOAuthTokens config assertion = do
-    manager <- newManager def
+    manager <- newManager tlsManagerSettings
     initReq <- parseUrl samlUrl
     let headers = "OAuth oauth_consumer_key=\"" <> consumerKey config <> "\""
     let body = [("saml_assertion", assertion)]
@@ -97,7 +99,7 @@ makeRequest urlPath httpMethod body headers client = do
     return $ responseBody res
 
 requestAndDecode urlPath httpMethod body headers client =
-    fmap decodeResponse $ makeRequest urlPath httpMethod body headers client
+    decodeResponse <$> makeRequest urlPath httpMethod body headers client
 
 getAccounts :: Client -> IO LBS.ByteString
 getAccounts = makeRequest "accounts" "GET" [] []
@@ -111,7 +113,7 @@ getInstitutionDetails instId client = do
     return $ Aeson.eitherDecode res
 
 parseBody :: LBS.ByteString -> [(LBS.ByteString, LBS.ByteString)]
-parseBody = fmap ((fmap (LC.drop 1)) . LC.break (=='=')) . LC.split '&'
+parseBody = fmap (fmap (LC.drop 1) . LC.break (=='=')) . LC.split '&'
 
 loadPrivateKey :: FilePath -> IO RSA.PrivateKey
 loadPrivateKey p = (throwLeft . decodePrivate) `fmap` BS.readFile p

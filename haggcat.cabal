@@ -27,26 +27,22 @@ library
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall
-  build-depends:       base >= 4 && <= 4.6.0.1
+  build-depends:       base >= 4
                      , aeson
-                     , async
                      , authenticate-oauth
                      , base64-bytestring
                      , bytestring
                      , conduit
                      , cryptohash
                      , crypto-pubkey-openssh
-                     , filepath
-                     , hoauth
+                     , data-default
+                     , http-client-tls
                      , http-conduit
-                     , MissingH
                      , old-locale
-                     , parallel
-                     , regex-compat
+                     , resourcet
                      , RSA
-                     , SHA
+                     , text
                      , time
-                     , transformers
                      , uuid
 
 Test-Suite integration-test
@@ -55,7 +51,7 @@ Test-Suite integration-test
   hs-source-dirs:      tests
   default-language:    Haskell2010
   build-depends:       haggcat
-                     , base >= 4 && <= 4.6.0.1
+                     , base >= 4
                      , authenticate-oauth
                      , bytestring
                      , HUnit

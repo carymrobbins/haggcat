@@ -83,7 +83,7 @@ newSignedSignatureValue saml privateKey signedDigestValue =
         newSamlSignedInfo (samlAssertionId saml) signedDigestValue
 
 rsaSign :: RSA.PrivateKey -> BS.ByteString -> BS.ByteString
-rsaSign pkey = withLazyToStrictBS $ RSA.rsassa_pkcs1_v1_5_sign RSA.ha_SHA1 pkey
+rsaSign pkey = withLazyToStrictBS $ RSA.rsassa_pkcs1_v1_5_sign RSA.hashSHA1 pkey
 
 strictToLazyBS :: BS.ByteString -> LBS.ByteString
 strictToLazyBS = LBS.fromChunks . pure
@@ -92,11 +92,11 @@ lazyToStrictBS :: LBS.ByteString -> BS.ByteString
 lazyToStrictBS = BS.concat . LBS.toChunks
 
 withStrictToLazyBS
-    :: (BS.ByteString -> BS.ByteString) -> (LBS.ByteString -> LBS.ByteString)
+    :: (BS.ByteString -> BS.ByteString) -> LBS.ByteString -> LBS.ByteString
 withStrictToLazyBS f = strictToLazyBS . f . lazyToStrictBS
 
 withLazyToStrictBS
-    :: (LBS.ByteString -> LBS.ByteString) -> (BS.ByteString -> BS.ByteString)
+    :: (LBS.ByteString -> LBS.ByteString) -> BS.ByteString -> BS.ByteString
 withLazyToStrictBS f = lazyToStrictBS . f . strictToLazyBS
 
 newSignedDigestValue :: Saml -> BS.ByteString
